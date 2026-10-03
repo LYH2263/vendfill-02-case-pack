@@ -19,6 +19,8 @@ class Lane(Base):
     capacity: Mapped[int] = mapped_column(Integer)
     stock: Mapped[int] = mapped_column(Integer, default=0)
     in_transit: Mapped[int] = mapped_column(Integer, default=0)
+    # 箱规件数：每次补货按整件，可补量向下取整到该倍数；1 = 按件补
+    case_qty: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
 
 class Sale(Base):
     __tablename__ = "sales"

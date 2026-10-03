@@ -9,16 +9,18 @@ def seed_if_empty(db: Session) -> None:
     loc = Location(code="VM-01", name="地铁口 A 点位", address="城东地铁 1 号口")
     db.add(loc); db.flush()
     lanes = [
-        ("A1", "矿泉水", 20, 5, 0),
-        ("A2", "可乐", 18, 18, 0),
-        ("B1", "薯片", 12, 3, 2),
-        ("B2", "巧克力", 15, 10, 5),
-        ("C1", "能量棒", 10, 0, 0),
-        ("C2", "口香糖", 24, 24, 2),
+        # slot, sku, cap, stock, transit, case_qty
+        ("A1", "矿泉水", 20, 5, 0, 1),
+        ("A2", "可乐", 18, 18, 0, 1),
+        ("B1", "薯片", 12, 3, 2, 4),   # 缺口 7，箱规 4 → 补 4
+        ("B2", "巧克力", 15, 10, 5, 1),
+        ("C1", "能量棒", 10, 0, 0, 6),  # 缺口 10，箱规 6 → 补 6
+        ("C2", "口香糖", 24, 24, 2, 1),
     ]
     lane_ids = []
-    for slot, sku, cap, stock, transit in lanes:
-        lane = Lane(location_id=loc.id, slot_no=slot, sku_name=sku, capacity=cap, stock=stock, in_transit=transit)
+    for slot, sku, cap, stock, transit, case_qty in lanes:
+        lane = Lane(location_id=loc.id, slot_no=slot, sku_name=sku, capacity=cap,
+                    stock=stock, in_transit=transit, case_qty=case_qty)
         db.add(lane); db.flush()
         lane_ids.append(lane.id)
     now = datetime(2026, 9, 16, 12, 0, 0)
