@@ -19,6 +19,8 @@ class Lane(Base):
     capacity: Mapped[int] = mapped_column(Integer)
     stock: Mapped[int] = mapped_column(Integer, default=0)
     in_transit: Mapped[int] = mapped_column(Integer, default=0)
+    # pieces per case; NULL/1 = per-piece refill (legacy behavior)
+    case_pack: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
 class Sale(Base):
     __tablename__ = "sales"

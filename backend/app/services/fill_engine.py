@@ -1,4 +1,10 @@
-"""Vending refill: gap = capacity - stock - in_transit; fills capped by gap; no negative fills."""
+"""Vending refill: gap = capacity - stock - in_transit; fills capped by gap; no negative fills.
+
+Case-pack rounding: each lane may declare a case_pack (pieces per case, positive int;
+empty/None/1 means per-piece). Fill qty is capped by the gap first, then rounded DOWN
+to a whole-case multiple. A lane whose gap > 0 stays need_fill even when the rounded
+fill is 0 ("less than one case" is never reported as "full").
+"""
 from __future__ import annotations
 from dataclasses import asdict, dataclass
 
@@ -13,15 +19,31 @@ class FillLine:
     gap: int
     fill_qty: int
     status: str  # need_fill | full | overbooked
+    case_pack: int = 1
 
 def compute_gap(capacity: int, stock: int, in_transit: int) -> int:
     return capacity - stock - in_transit
 
+def effective_case_pack(case_pack: int | None) -> int:
+    """None/empty/1 -> per-piece (1); anything <= 0 is treated as per-piece too."""
+    try:
+        pack = int(case_pack) if case_pack is not None else 1
+    except (TypeError, ValueError):
+        return 1
+    return pack if pack > 1 else 1
+
+def round_to_case_pack(qty: int, case_pack: int | None) -> int:
+    """Round qty DOWN to a whole multiple of the case pack."""
+    pack = effective_case_pack(case_pack)
+    return (qty // pack) * pack
+
 def build_fill_lines(lanes: list[dict], requested: dict[int, int] | None = None) -> list[FillLine]:
-    """requested optional desired fill per lane_id; capped by gap; never negative."""
+    """requested optional desired fill per lane_id; capped by gap, then rounded down
+    to the lane's case pack; never negative."""
     lines: list[FillLine] = []
     for lane in lanes:
         gap = compute_gap(int(lane["capacity"]), int(lane["stock"]), int(lane["in_transit"]))
+        pack = effective_case_pack(lane.get("case_pack"))
         if gap < 0:
             status = "overbooked"
             fill = 0
@@ -31,11 +53,11 @@ def build_fill_lines(lanes: list[dict], requested: dict[int, int] | None = None)
         else:
             status = "need_fill"
             desire = gap if requested is None else int(requested.get(lane["id"], gap))
-            fill = max(0, min(desire, gap))
+            fill = round_to_case_pack(max(0, min(desire, gap)), pack)
         lines.append(FillLine(
             lane_id=lane["id"], slot_no=lane["slot_no"], sku_name=lane["sku_name"],
             capacity=lane["capacity"], stock=lane["stock"], in_transit=lane["in_transit"],
-            gap=gap, fill_qty=fill, status=status,
+            gap=gap, fill_qty=fill, status=status, case_pack=pack,
         ))
     return lines
 

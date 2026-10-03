@@ -17,7 +17,7 @@ onMounted(run)
       </div>
       <div class="vf-receipt-line" v-for="l in data.lines" :key="l.lane_id">
         <span>{{ l.slot_no }} {{ l.sku_name }}
-          <small>({{ l.status === 'need_fill' ? '待补' : l.status === 'full' ? '满仓' : '超占' }})</small>
+          <small>({{ l.status === 'need_fill' ? (l.fill_qty === 0 ? '待补·不足整箱' : '待补') : l.status === 'full' ? '满仓' : '超占' }}<template v-if="l.case_pack > 1">·箱规{{ l.case_pack }}</template>)</small>
         </span>
         <span>{{ l.fill_qty }} / 缺{{ l.gap }}</span>
       </div>
